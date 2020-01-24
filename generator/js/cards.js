@@ -154,6 +154,20 @@ function card_element_boxes(params, card_data, options) {
     return result;
 }
 
+function card_element_startcolumns(params, card_data, options) {;
+    var count = params[0] || 1;
+    var width = 100 / count;
+    return '<div class="card-element" style="width: ' + width + '%">';
+}
+
+function card_element_endcolumns(params, card_data, options) {
+    return '</div><div class="card-element">'
+}
+
+function card_element_nextcolumn(params, card_data, options) {
+    return '</div>'
+}
+
 function card_element_property(params, card_data, options) {
     var result = "";
     result += '<div class="card-element card-property-line">';
@@ -283,7 +297,10 @@ var card_element_generators = {
     section: card_element_section,
     disabled: card_element_empty,
     picture: card_element_picture,
-    icon: card_element_inline_icon
+    icon: card_element_inline_icon,
+    startcolumns: card_element_startcolumns,
+    endcolumns: card_element_endcolumns,
+    nextcolumn: card_element_nextcolumn
 };
 
 // ============================================================================
