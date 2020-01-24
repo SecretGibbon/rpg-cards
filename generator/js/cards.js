@@ -24,7 +24,9 @@ function card_default_data() {
         count: 1,
         title: "New card",
         contents: [],
-        tags: []
+        tags: [],
+        ability_mods: [],
+        level: 0
     };
 }
 
@@ -155,17 +157,24 @@ function card_element_boxes(params, card_data, options) {
 }
 
 function card_element_startcolumns(params, card_data, options) {;
-    var count = params[0] || 1;
-    var width = 100 / count;
-    return '<div class="card-element" style="width: ' + width + '%">';
+    let count = params[0] || 2;
+    let padding = params[1] || 0;
+    let align = params[2] || "left";
+    let width = 100 / count;
+    let result = '<div style="display: flex; text-align: ' + align + ';">';
+    result += '<div class="card-element" style="width: ' + width + '%; padding-left: ' + padding + 'px; padding-right: ' + padding + 'px">';
+    return result;
 }
 
 function card_element_endcolumns(params, card_data, options) {
-    return '</div><div class="card-element">'
+    return '</div></div>'
 }
 
 function card_element_nextcolumn(params, card_data, options) {
-    return '</div>'
+    var count = params[0] || 2;
+    let padding = params[1] || 0;
+    var width = 100 / count;
+    return '</div><div class="card-element" style="width: ' + width + '%; padding-left: ' + padding + 'px; padding-right: ' + padding + 'px">'
 }
 
 function card_element_property(params, card_data, options) {
@@ -217,12 +226,29 @@ function card_element_justify(params, card_data, options) {
     return result;
 }
 
+function card_element_dndclasses(params, card_data, options) {
+    let result = "";
+    card_data.level = 0;
+    result += '<div class="card-element card-description-line">';
+    for (let i = 0; i < params.length; i += 2) {
+        let level = parseInt(params[i+1], 10) || 0;
+        result += '   <h4 class="card-description-name">' + params[i] + ' (' + level + ')</h4>';
+        card_data.level += level;
+    }
+    let levelProficiency = card_data.level < 5 ? 2 : (card_data.level < 9 ? 3 : (card_data.level < 13 ? 4 : (card_data.level < 17 ? 5 : 6)));
+    result += '   <h4 class="card-description-name">Proficiency +' + levelProficiency + '</h4>';
+    result += '</div>';
+    return result;
+}
+
 function card_element_dndstats(params, card_data, options) {
     var stats = [10, 10, 10, 10, 10, 10];
     var mods = [0,0,0,0,0,0];
+    card_data.ability_mods = [0,0,0,0,0,0];
     for (var i = 0; i < 6; ++i) {
         stats[i] = parseInt(params[i], 10) || 0;
         var mod = Math.floor(((stats[i] - 10) / 2));
+        card_data.ability_mods[i] = mod;
         if (mod >= 0) {
             mod = "+" + mod;
         } else {
@@ -251,6 +277,172 @@ function card_element_dndstats(params, card_data, options) {
     result += '    </tr>';
     result += '  </tbody>';
     result += '</table>';
+    return result;
+}
+
+function card_element_dndsaves(params, card_data, options) {
+    let proficiencies = [0, 0, 0, 0, 0, 0];
+    for (let i = 0; i < params.length; i ++) {
+        if (params[i].toLowerCase() === "str" || params[i].toLowerCase() === "strength") {
+            proficiencies[0] ++;
+        }
+        if (params[i].toLowerCase() === "dex" || params[i].toLowerCase() === "dexterity") {
+            proficiencies[1] ++;
+        }
+        if (params[i].toLowerCase() === "con" || params[i].toLowerCase() === "constitution") {
+            proficiencies[2] ++;
+        }
+        if (params[i].toLowerCase() === "int" || params[i].toLowerCase() === "intelligence") {
+            proficiencies[3] ++;
+        }
+        if (params[i].toLowerCase() === "wis" || params[i].toLowerCase() === "wisdom") {
+            proficiencies[4] ++;
+        }
+        if (params[i].toLowerCase() === "cha" || params[i].toLowerCase() === "charisma") {
+            proficiencies[5] ++;
+        }
+    }
+    let levelProficiency = card_data.level < 5 ? 2 : (card_data.level < 9 ? 3 : (card_data.level < 13 ? 4 : (card_data.level < 17 ? 5 : 6)));
+
+    let result = "";
+    result += '<table class="card-stats">';
+    result += '    <tbody><tr>';
+    result += '      <th class="card-stats-header">STR</th>';
+    result += '      <th class="card-stats-header">DEX</th>';
+    result += '      <th class="card-stats-header">CON</th>';
+    result += '      <th class="card-stats-header">INT</th>';
+    result += '      <th class="card-stats-header">WIS</th>';
+    result += '      <th class="card-stats-header">CHA</th>';
+    result += '    </tr>';
+    result += '    <tr>';
+    for (let i = 0; i < 6; i++) {
+        let savingThrowBonus = card_data.ability_mods[i] + (proficiencies[i] > 0 ? levelProficiency : 0);
+        if (savingThrowBonus > 0) {
+            savingThrowBonus = "+" + savingThrowBonus;
+        }
+        result += '      <td class="card-stats-cell">' + savingThrowBonus + '</td>';
+    }
+    result += '    </tr>';
+    result += '  </tbody>';
+    result += '</table>';
+    return result;
+}
+
+function add_skill_proficiency(name, proficiencies) {
+    if (proficiencies[name.toLowerCase()] === 1) {
+        proficiencies[name.toLowerCase()] = 2;
+    } else {
+        proficiencies[name.toLowerCase()] = 1;
+    }
+}
+
+function card_element_dndskills(params, card_data, options) {
+    let proficiencies = {};
+    for (let i = 0; i < params.length; i ++) {
+        if (params[i].toLowerCase() === "acr" || params[i].toLowerCase() === "acrobatics") {
+            add_skill_proficiency("acrobatics", proficiencies);
+        }
+        if (params[i].toLowerCase() === "ani" || params[i].toLowerCase() === "animal handling") {
+            proficiencies["animal handling"] ++;
+        }
+        if (params[i].toLowerCase() === "arc" || params[i].toLowerCase() === "arcana") {
+            add_skill_proficiency("arcana", proficiencies);
+        }
+        if (params[i].toLowerCase() === "ath" || params[i].toLowerCase() === "athletics") {
+            add_skill_proficiency("athletics", proficiencies);
+        }
+        if (params[i].toLowerCase() === "dec" || params[i].toLowerCase() === "deception") {
+            add_skill_proficiency("deception", proficiencies);
+        }
+        if (params[i].toLowerCase() === "his" || params[i].toLowerCase() === "history") {
+            add_skill_proficiency("history", proficiencies);
+        }
+        if (params[i].toLowerCase() === "ins" || params[i].toLowerCase() === "insight") {
+            add_skill_proficiency("insight", proficiencies);
+        }
+        if (params[i].toLowerCase() === "int" || params[i].toLowerCase() === "intimidation") {
+            add_skill_proficiency("intimidation", proficiencies);
+        }
+        if (params[i].toLowerCase() === "inv" || params[i].toLowerCase() === "investigation") {
+            add_skill_proficiency("investigation", proficiencies);
+        }
+        if (params[i].toLowerCase() === "med" || params[i].toLowerCase() === "medicine") {
+            add_skill_proficiency("medicine", proficiencies);
+        }
+        if (params[i].toLowerCase() === "nat" || params[i].toLowerCase() === "nature") {
+            add_skill_proficiency("nature", proficiencies);
+        }
+        if (params[i].toLowerCase() === "prc" || params[i].toLowerCase() === "perception") {
+            add_skill_proficiency("perception", proficiencies);
+        }
+        if (params[i].toLowerCase() === "prf" || params[i].toLowerCase() === "performance") {
+            add_skill_proficiency("performance", proficiencies);
+        }
+        if (params[i].toLowerCase() === "prs" || params[i].toLowerCase() === "persuasion") {
+            add_skill_proficiency("persuasion", proficiencies);
+        }
+        if (params[i].toLowerCase() === "rel" || params[i].toLowerCase() === "religion") {
+            add_skill_proficiency("religion", proficiencies);
+        }
+        if (params[i].toLowerCase() === "sle" || params[i].toLowerCase() === "sleight of hand") {
+            add_skill_proficiency("sleight of hand", proficiencies);
+        }
+        if (params[i].toLowerCase() === "ste" || params[i].toLowerCase() === "stealth") {
+            add_skill_proficiency("stealth", proficiencies);
+        }
+        if (params[i].toLowerCase() === "sur" || params[i].toLowerCase() === "survival") {
+            add_skill_proficiency("survival", proficiencies);
+        }
+    }
+    console.log(proficiencies);
+
+    let result = "";
+    result += card_element_startcolumns([2, 5, "left"], card_data, options);
+    result += '<table class="card-stats" style="padding: 0px 5px; font-size: 0.8em; border-right: solid black 1px">';
+    result += '    <tbody>';
+    result += get_skill_row("Acrobatics", 1, card_data, proficiencies);
+    result += get_skill_row("Animal Handling", 4, card_data, proficiencies);
+    result += get_skill_row("Arcana", 3, card_data, proficiencies);
+    result += get_skill_row("Athletics", 0, card_data, proficiencies);
+    result += get_skill_row("Deception", 5, card_data, proficiencies);
+    result += get_skill_row("History", 3, card_data, proficiencies);
+    result += get_skill_row("Insight", 4, card_data, proficiencies);
+    result += get_skill_row("Intimidation", 5, card_data, proficiencies);
+    result += get_skill_row("Investigation", 3, card_data, proficiencies);
+    result += '  </tbody>';
+    result += '</table>';
+    result += card_element_nextcolumn([2, 5], card_data, options);
+    result += '<table class="card-stats" style="font-size: 0.8em;">';
+    result += '    <tbody>';
+    result += get_skill_row("Medicine", 4, card_data, proficiencies);
+    result += get_skill_row("Nature", 3, card_data, proficiencies);
+    result += get_skill_row("Perception", 4, card_data, proficiencies);
+    result += get_skill_row("Performance", 5, card_data, proficiencies);
+    result += get_skill_row("Persuasion", 5, card_data, proficiencies);
+    result += get_skill_row("Religion", 3, card_data, proficiencies);
+    result += get_skill_row("Sleight Of Hand", 1, card_data, proficiencies);
+    result += get_skill_row("Stealth",1, card_data, proficiencies);
+    result += get_skill_row("Survival", 4, card_data, proficiencies);
+    result += '  </tbody>';
+    result += '</table>';
+    result += card_element_endcolumns([], card_data, options);
+    return result;
+}
+
+function get_skill_row(name, ability, card_data, proficiencies) {
+    console.log(proficiencies);
+    let result = "";
+    let levelProficiency = card_data.level < 5 ? 2 : (card_data.level < 9 ? 3 : (card_data.level < 13 ? 4 : (card_data.level < 17 ? 5 : 6)));
+    console.log("card_data.ability_mods[ability]", card_data.ability_mods[ability]);
+    console.log("proficiencies[name.toLowerCase()]", proficiencies[name.toLowerCase()]);
+    let value = card_data.ability_mods[ability] + ((proficiencies[name.toLowerCase()] || 0) * levelProficiency);
+    result += '      <tr>';
+    result += '        <th style="width: 80%;">' + name + '</th>';
+    result += '        <td class="card-stats-cell" style="width: 20%;">' + value + '</td>';
+    result += '      </tr>';
+    console.log("name", name);
+    console.log("levelProficiency", levelProficiency);
+    console.log("value", value);
     return result;
 }
 
@@ -288,7 +480,10 @@ var card_element_generators = {
     ruler: card_element_ruler,
     boxes: card_element_boxes,
     description: card_element_description,
+    dndclasses: card_element_dndclasses,
     dndstats: card_element_dndstats,
+    dndsaves: card_element_dndsaves,
+    dndskills: card_element_dndskills,
     text: card_element_text,
     center: card_element_center,
     justify: card_element_justify,
