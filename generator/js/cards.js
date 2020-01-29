@@ -210,6 +210,14 @@ function card_element_text(params, card_data, options) {
     return result;
 }
 
+function card_element_info(params, card_data, options) {
+    var result = "";
+    result += '<div class="card-element card-description-line">';
+    result += '   <p class="card-p card-description-text" style="font-size: 0.8em;">' + params[0] + '</p>';
+    result += '</div>';
+    return result;
+}
+
 function card_element_center(params, card_data, options) {
     var result = "";
     result += '<div class="card-element card-description-line" style="text-align: center">';
@@ -394,11 +402,11 @@ function card_element_dndskills(params, card_data, options) {
             add_skill_proficiency("survival", proficiencies);
         }
     }
-    console.log(proficiencies);
+    console.log(options);
 
     let result = "";
     result += card_element_startcolumns([2, 5, "left"], card_data, options);
-    result += '<table class="card-stats" style="padding: 0px 5px; font-size: 0.8em; border-right: solid black 1px">';
+    result += '<table class="card-stats" style="font-size: 0.8em; border-right: solid '+ options.default_color + ' 1px; line-height: 0.95em;">';
     result += '    <tbody>';
     result += get_skill_row("Acrobatics", 1, card_data, proficiencies);
     result += get_skill_row("Animal Handling", 4, card_data, proficiencies);
@@ -412,7 +420,7 @@ function card_element_dndskills(params, card_data, options) {
     result += '  </tbody>';
     result += '</table>';
     result += card_element_nextcolumn([2, 5], card_data, options);
-    result += '<table class="card-stats" style="font-size: 0.8em;">';
+    result += '<table class="card-stats" style="font-size: 0.8em; line-height: 0.95em;">';
     result += '    <tbody>';
     result += get_skill_row("Medicine", 4, card_data, proficiencies);
     result += get_skill_row("Nature", 3, card_data, proficiencies);
@@ -430,19 +438,13 @@ function card_element_dndskills(params, card_data, options) {
 }
 
 function get_skill_row(name, ability, card_data, proficiencies) {
-    console.log(proficiencies);
     let result = "";
     let levelProficiency = card_data.level < 5 ? 2 : (card_data.level < 9 ? 3 : (card_data.level < 13 ? 4 : (card_data.level < 17 ? 5 : 6)));
-    console.log("card_data.ability_mods[ability]", card_data.ability_mods[ability]);
-    console.log("proficiencies[name.toLowerCase()]", proficiencies[name.toLowerCase()]);
     let value = card_data.ability_mods[ability] + ((proficiencies[name.toLowerCase()] || 0) * levelProficiency);
     result += '      <tr>';
-    result += '        <th style="width: 80%;">' + name + '</th>';
+    result += '        <th style="width: 90%;">' + name + '</th>';
     result += '        <td class="card-stats-cell" style="width: 20%;">' + value + '</td>';
     result += '      </tr>';
-    console.log("name", name);
-    console.log("levelProficiency", levelProficiency);
-    console.log("value", value);
     return result;
 }
 
@@ -485,6 +487,7 @@ var card_element_generators = {
     dndsaves: card_element_dndsaves,
     dndskills: card_element_dndskills,
     text: card_element_text,
+    info: card_element_info,
     center: card_element_center,
     justify: card_element_justify,
     bullet: card_element_bullet,
